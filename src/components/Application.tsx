@@ -1,121 +1,107 @@
 import React, { useEffect, useState } from 'react';
 import './Application.scss';
-import { icons } from './Icons';
+import axios from 'axios';
+import { Button, Input, Typography, message } from 'antd';
+import { Alchemy, Network } from 'alchemy-sdk';
 
+const ALCHEMY_API_KEY = 'alcht_Rh7Jis6SVA6obxvg5ZCpa2XMUzELLn';
+
+interface payload {
+  wallet: string;
+  contractAddress: string;
+}
 const Application: React.FC = () => {
-  const [counter, setCounter] = useState(0);
-  const [darkTheme, setDarkTheme] = useState(true);
-
-  /**
-   * On component mount
-   */
+  const [payload, setPayload] = useState({
+    wallet: '',
+    contractAddress: '',
+  });
+  const [verify, setVerify] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+  const alchemy = useState(
+    new Alchemy({
+      apiKey: ALCHEMY_API_KEY,
+      network: Network.ETH_MAINNET,
+    }),
+  );
   useEffect(() => {
-    const useDarkTheme = parseInt(localStorage.getItem('dark-mode'));
-    if (isNaN(useDarkTheme)) {
-      setDarkTheme(true);
-    } else if (useDarkTheme == 1) {
-      setDarkTheme(true);
-    } else if (useDarkTheme == 0) {
-      setDarkTheme(false);
-    }
-  }, []);
-
-  /**
-   * On Dark theme change
-   */
+    console.log(payload);
+  }, [payload]);
   useEffect(() => {
-    if (darkTheme) {
-      localStorage.setItem('dark-mode', '1');
-      document.body.classList.add('dark-mode');
-    } else {
-      localStorage.setItem('dark-mode', '0');
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkTheme]);
+    if (!verify) return;
+    const verifyOwnerShip = async (wallet: string, contractAddress: string) => {
+      messageApi.open({
+        key: 'updatable',
+        type: 'loading',
+        content: 'Verifying ownership, please wait...',
+      });
+      await axios
+        .get(
+          `https://eth-mainnet.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}/isHolderOfCollection`,
+          {
+            params: {
+              wallet,
+              contractAddress,
+            },
+          },
+        )
+        .then((response) => {
+          const { data } = response;
+          const type = data.isHolderOfCollection ? 'success' : 'error';
+          const content = data.isHolderOfCollection
+            ? 'is owner !'
+            : 'is not owner';
 
-  /**
-   * Toggle Theme
-   */
-  function toggleTheme() {
-    setDarkTheme(!darkTheme);
-  }
-
+          messageApi.open({
+            key: 'updatable',
+            type,
+            content,
+            duration: 5,
+          });
+          console.log(response);
+        })
+        .catch((e) => {
+          messageApi.open({
+            key: 'updatable',
+            type: 'error',
+            content: 'Unexpected error, please verify informations format',
+            duration: 5,
+          });
+        });
+      setVerify(false);
+    };
+    verifyOwnerShip(payload.wallet, payload.contractAddress);
+  }, [verify]);
   return (
-    <div id='erwt'>
-      <div className='header'>
-        <div className='main-heading'>
-          <h1 className='themed'>React Webpack Typescript</h1>
-        </div>
-        <div className='main-teaser'>
-          <div>
-            Robust boilerplate for Desktop Applications with Electron and
-            ReactJS. Hot Reloading is used in this project for fast development
-            experience.
-            <br />
-            If you think the project is useful enough, just spread the word
-            around!
-          </div>
-        </div>
-        <div className='versions'>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.erwt} /> ERWT
-            </div>
-          </div>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.typescript} /> Typescript
-            </div>
-          </div>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.react} /> React
-            </div>
-          </div>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.webpack} /> Webpack
-            </div>
-          </div>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.chrome} /> Chrome
-            </div>
-          </div>
-          <div className='item'>
-            <div>
-              <img className='item-icon' src={icons.license} /> License
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className='footer'>
-        <div className='center'>
-          <button
-            onClick={() => {
-              if (counter > 99) return alert('Going too high!!');
-              setCounter(counter + 1);
-            }}
+    <>
+      {contextHolder}
+      <main className='main'>
+        <section className='input-section-flex'>
+          <Typography>{'Verify NFT ownership'}</Typography>
+          <Input
+            placeholder='wallet'
+            onChange={(e) =>
+              setPayload((prev) => {
+                return { ...prev, wallet: e.target.value };
+              })
+            }
+          ></Input>
+          <Input
+            placeholder='Contract Address'
+            onChange={(e) =>
+              setPayload((prev) => {
+                return { ...prev, contractAddress: e.target.value };
+              })
+            }
+          ></Input>
+          <Button
+            disabled={!payload.contractAddress.length || !payload.wallet.length}
+            onClick={() => setVerify(true)}
           >
-            Increment {counter != 0 ? counter : ''} <span>{counter}</span>
-          </button>
-          &nbsp;&nbsp; &nbsp;&nbsp;
-          <button
-            onClick={() => {
-              if (counter == 0) return alert('Oops.. thats not possible!');
-              setCounter(counter > 0 ? counter - 1 : 0);
-            }}
-          >
-            Decrement <span>{counter}</span>
-          </button>
-          &nbsp;&nbsp; &nbsp;&nbsp;
-          <button onClick={toggleTheme}>
-            {darkTheme ? 'Light Theme' : 'Dark Theme'}
-          </button>
-        </div>
-      </div>
-    </div>
+            Verify ownership
+          </Button>
+        </section>
+      </main>
+    </>
   );
 };
 
