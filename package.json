@@ -42,9 +42,11 @@
     "webpack-dev-server": "^4.11.1"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.199",
     "alchemy-sdk": "^2.10.1",
     "antd": "^5.10.0",
     "axios": "^1.5.1",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

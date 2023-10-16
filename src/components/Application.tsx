@@ -39,6 +39,7 @@ const Application: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [alchemy, setAlchemy] = useState<undefined | Alchemy>(undefined);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
   const handleVerifyOwnerClick = useCallback(async () => {
     setVerify(true);
     messageApi.open({
@@ -69,10 +70,26 @@ const Application: React.FC = () => {
         });
       }
     } catch (e) {
-      alert('error');
+      messageApi.open({
+        key: 'handleVerifyOwnerClick',
+        type: 'warning',
+        content: `Unexpected error occured. please check formatting.`,
+        duration: 5,
+      });
     }
     setVerify(false);
   }, [JSON.stringify(payload)]);
+
+  const handleFetchNftFailure = (e: any) => {
+    setIsWalletModalOpen(false);
+    messageApi.open({
+      key: 'critical',
+      type: 'error',
+      content: `Unexpected error occured while trying to get NFT's data. please try again later.`,
+      duration: 5,
+    });
+  };
+
   const WalletModalOnCancel = () => {
     setIsWalletModalOpen(false);
   };
@@ -85,6 +102,7 @@ const Application: React.FC = () => {
         title={`wallet ${payload.wallet}`}
         open={isWalletModalOpen}
         onCancel={WalletModalOnCancel}
+        onFetchNftFailure={(e) => handleFetchNftFailure(e)}
       />
       <main className='main'>
         <section className='input-section-flex'>
